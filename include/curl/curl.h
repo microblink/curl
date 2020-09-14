@@ -960,7 +960,7 @@ typedef enum {
 struct curl_hstsentry {
   char *name;
   size_t namelen;
-  int includeSubDomains:1;
+  unsigned int includeSubDomains:1;
   char expire[18]; /* YYYYMMDD HH:MM:SS [null-terminated] */
 };
 
