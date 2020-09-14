@@ -43,9 +43,9 @@ in-memory HSTS cache.
 Set the \fIuserp\fP argument with the \fICURLOPT_HSTSREADDATA(3)\fP option or
 it will be NULL.
 
-When the callback is invoke, the \fIsts\fP pointer points to a pupulated
+When the callback is invoke, the \fIsts\fP pointer points to a populated
 struct: Copy the host name to 'name' (no longer than 'namelen' bytes). Make it
-null-terminated. Set 'includeSubDomain' to TRUE or FALSE. Set 'expire' to a
+null-terminated. Set 'includeSubDomains' to TRUE or FALSE. Set 'expire' to a
 date stamp or a zero length string for *forever* (wrong date stamp format
 might cause the name to not get accepted)
 

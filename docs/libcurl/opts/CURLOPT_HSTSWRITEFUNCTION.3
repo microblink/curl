@@ -45,9 +45,9 @@ it.
 Set the \fIuserp\fP argument with the \fICURLOPT_HSTSWRITEDATA(3)\fP option or
 it will be NULL.
 
-When the callback is invoked, the \fIsts\fP pointer points to a pupulated
+When the callback is invoked, the \fIsts\fP pointer points to a populated
 struct: Read the host name to 'name' (it is 'namelen' bytes long and null
-terminated. The 'includeSubDomain' is non-zero if the entry matches
+terminated. The 'includeSubDomains' field is non-zero if the entry matches
 subdomains. The 'expire' string is a date stamp null-terminated string using
 the syntax YYYYMMDD HH:MM:SS.
 
@@ -77,4 +77,3 @@ This will return CURLE_OK.
 .SH "SEE ALSO"
 .BR CURLOPT_HSTSWRITEDATA "(3), " CURLOPT_HSTSWRITEFUNCTION "(3), "
 .BR CURLOPT_HSTS "(3), " CURLOPT_HSTS_CTRL "(3), "
-
