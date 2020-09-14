@@ -53,7 +53,8 @@ struct stsentry *Curl_hsts(struct hsts *h, const char *hostname,
                            bool subdomain);
 CURLcode Curl_hsts_save(struct Curl_easy *data, struct hsts *h,
                         const char *file);
-CURLcode Curl_hsts_load(struct hsts *h, const char *file);
+CURLcode Curl_hsts_load(struct Curl_easy *data,
+                        struct hsts *h, const char *file);
 #else
 #define Curl_hsts_cleanup(x)
 #endif /* CURL_DISABLE_HTTP || USE_HSTS */

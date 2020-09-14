@@ -262,6 +262,37 @@ struct stsentry *Curl_hsts(struct hsts *h, const char *hostname,
 }
 
 /*
+ * Send this HSTS entry to the write callback.
+ */
+static CURLcode hsts_push(struct Curl_easy *data,
+                          struct curl_index *i,
+                          struct stsentry *sts,
+                          bool *stop)
+{
+  struct curl_hstsentry e;
+  CURLSTScode sc;
+  struct tm stamp;
+  CURLcode result;
+
+  e.name = (char *)sts->host;
+  e.namelen = strlen(sts->host);
+  e.includeSubDomains = sts->includeSubDomains;
+
+  result = Curl_gmtime(sts->expires, &stamp);
+  if(result)
+    return result;
+
+  msnprintf(e.expire, sizeof(e.expire), "%d%02d%02d %02d:%02d:%02d",
+            stamp.tm_year + 1900, stamp.tm_mon + 1, stamp.tm_mday,
+            stamp.tm_hour, stamp.tm_min, stamp.tm_sec);
+
+  sc = data->set.hsts_write(data, &e, i,
+                            data->set.hsts_write_userp);
+  *stop = (sc != CURLSTS_AGAIN);
+  return sc == CURLSTS_FAIL ? CURLE_BAD_FUNCTION_ARGUMENT : CURLE_OK;
+}
+
+/*
  * Write this single hsts entry to a single output line
  */
 static CURLcode hsts_out(struct stsentry *sts, FILE *fp)
@@ -280,7 +311,7 @@ static CURLcode hsts_out(struct stsentry *sts, FILE *fp)
 
 
 /*
- * Curl_https_save() writes the HSTS cache to a file.
+ * Curl_https_save() writes the HSTS cache to file and callback.
  */
 CURLcode Curl_hsts_save(struct Curl_easy *data, struct hsts *h,
                         const char *file)
@@ -333,6 +364,22 @@ CURLcode Curl_hsts_save(struct Curl_easy *data, struct hsts *h,
       unlink(tempstore);
   }
   free(tempstore);
+
+  if(data->set.hsts_write) {
+    /* if there's a write callback */
+    struct curl_index i; /* count */
+    i.total = h->list.size;
+    i.index = 0;
+    for(e = h->list.head; e; e = n) {
+      struct stsentry *sts = e->ptr;
+      bool stop;
+      n = e->next;
+      result = hsts_push(data, &i, sts, &stop);
+      if(result || stop)
+        break;
+      i.index++;
+    }
+  }
   return result;
 }
 
@@ -364,6 +411,40 @@ static CURLcode hsts_add(struct hsts *h, char *line)
       return result;
   }
 
+  return CURLE_OK;
+}
+
+/*
+ * Load HSTS data from callback.
+ *
+ */
+static CURLcode hsts_pull(struct Curl_easy *data, struct hsts *h)
+{
+  /* if the HSTS read callback is set, use it */
+  if(data->set.hsts_read) {
+    CURLSTScode sc;
+    do {
+      char buffer[257];
+      struct curl_hstsentry e;
+      e.name = buffer;
+      e.namelen = sizeof(buffer)-1;
+      e.includeSubDomains = FALSE; /* default */
+      e.expire[0] = 0;
+      e.name[0] = 0; /* just to make it clean */
+      sc = data->set.hsts_read(data, &e, data->set.hsts_read_userp);
+      if((sc == CURLSTS_AGAIN) || (sc == CURLSTS_DONE)) {
+        time_t expires;
+        CURLcode result;
+        if(e.expire[0])
+          expires = Curl_getdate_capped(e.expire);
+        else
+          expires = TIME_T_MAX; /* the end of time */
+        result = hsts_create(h, e.name, e.includeSubDomains, expires);
+        if(result)
+          return result;
+      }
+    } while(sc == CURLSTS_AGAIN);
+  }
   return CURLE_OK;
 }
 
@@ -417,13 +498,16 @@ static CURLcode hsts_load(struct hsts *h, const char *file)
 }
 
 /*
- * Curl_hsts_load() loads HSTS from file.
+ * Curl_hsts_load() loads HSTS from file and callback.
  */
-CURLcode Curl_hsts_load(struct hsts *h, const char *file)
+CURLcode Curl_hsts_load(struct Curl_easy *data,
+                        struct hsts *h, const char *file)
 {
   CURLcode result;
   DEBUGASSERT(h);
   result = hsts_load(h, file);
+  if(!result)
+    result = hsts_pull(data, h);
   return result;
 }
 

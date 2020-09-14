@@ -2860,7 +2860,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     if(result)
       return result;
     if(argptr)
-      (void)Curl_hsts_load(data->hsts, argptr);
+      (void)Curl_hsts_load(data, data->hsts, argptr);
     break;
   case CURLOPT_HSTS_CTRL:
     arg = va_arg(param, long);
