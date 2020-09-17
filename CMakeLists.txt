@@ -185,6 +185,8 @@ option(CURL_DISABLE_GOPHER "to disable Gopher" OFF)
 mark_as_advanced(CURL_DISABLE_GOPHER)
 option(CURL_ENABLE_MQTT "to enable MQTT" OFF)
 mark_as_advanced(CURL_ENABLE_MQTT)
+option(CURL_DISABLE_IDN2 "disable IDN2" OFF)
+mark_as_advanced(CURL_DISABLE_IDN2)
 
 if(HTTP_ONLY)
   set(CURL_DISABLE_FTP ON)
@@ -200,6 +202,7 @@ if(HTTP_ONLY)
   set(CURL_DISABLE_SMB ON)
   set(CURL_DISABLE_SMTP ON)
   set(CURL_DISABLE_GOPHER ON)
+  set(CURL_DISABLE_IDN2 ON)
 endif()
 
 option(CURL_DISABLE_COOKIES "to disable cookies support" OFF)
@@ -289,6 +292,10 @@ endif()
 # Check for all needed libraries
 check_library_exists_concat("${CMAKE_DL_LIBS}" dlopen HAVE_LIBDL)
 check_library_exists_concat("socket" connect      HAVE_LIBSOCKET)
+if ( APPLE )
+    # apple has socket but fails if given -lsocket linker flag
+    list( REMOVE_ITEM CURL_LIBS "socket" )
+endif()
 check_library_exists("c" gethostbyname "" NOT_NEED_LIBNSL)
 
 # Yellowtab Zeta needs different libraries than BeOS 5.
@@ -615,7 +622,9 @@ if(NOT CURL_DISABLE_LDAPS)
 endif()
 
 # Check for idn
-check_library_exists_concat("idn2" idn2_lookup_ul HAVE_LIBIDN2)
+if(NOT CURL_DISABLE_IDN2)
+  check_library_exists_concat("idn2" idn2_lookup_ul HAVE_LIBIDN2)
+endif()
 
 # Check for symbol dlopen (same as HAVE_LIBDL)
 check_library_exists("${CURL_LIBS}" dlopen "" HAVE_DLOPEN)
