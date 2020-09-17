@@ -150,3 +150,7 @@ export(TARGETS ${LIB_NAME}
        APPEND FILE ${PROJECT_BINARY_DIR}/libcurl-target.cmake
        NAMESPACE ${PROJECT_NAME}::
 )
+
+if ( COMMAND make_universal )
+    make_universal( ${LIB_NAME} )
+endif()
