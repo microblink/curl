@@ -292,8 +292,8 @@ endif()
 # Check for all needed libraries
 check_library_exists_concat("${CMAKE_DL_LIBS}" dlopen HAVE_LIBDL)
 check_library_exists_concat("socket" connect      HAVE_LIBSOCKET)
-if ( APPLE )
-    # apple has socket but fails if given -lsocket linker flag
+if ( APPLE OR ANDROID )
+    # apple and android have socket but fails if given -lsocket linker flag
     list( REMOVE_ITEM CURL_LIBS "socket" )
 endif()
 check_library_exists("c" gethostbyname "" NOT_NEED_LIBNSL)
