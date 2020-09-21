@@ -292,10 +292,8 @@ endif()
 # Check for all needed libraries
 check_library_exists_concat("${CMAKE_DL_LIBS}" dlopen HAVE_LIBDL)
 check_library_exists_concat("socket" connect      HAVE_LIBSOCKET)
-if ( APPLE OR ANDROID )
-    # apple and android have socket but fails if given -lsocket linker flag
-    list( REMOVE_ITEM CURL_LIBS "socket" )
-endif()
+# apple, linux and android have socket but linking fails if given -lsocket linker flag
+list( REMOVE_ITEM CURL_LIBS "socket" )
 check_library_exists("c" gethostbyname "" NOT_NEED_LIBNSL)
 
 # Yellowtab Zeta needs different libraries than BeOS 5.
