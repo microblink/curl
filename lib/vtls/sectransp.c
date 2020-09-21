@@ -1399,8 +1399,12 @@ static CURLcode sectransp_connect_step1(struct connectdata *conn,
   const bool verifypeer = SSL_CONN_CONFIG(verifypeer);
   char * const ssl_cert = SSL_SET_OPTION(cert);
   const struct curl_blob *ssl_cert_blob = SSL_SET_OPTION(cert_blob);
-  const char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
+#ifndef CURL_DISABLE_PROXY
+  char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
     conn->host.name;
+#else
+  char * const hostname = conn->host.name;
+#endif
   const long int port = SSL_IS_PROXY() ? conn->port : conn->remote_port;
 #ifdef ENABLE_IPV6
   struct in6_addr addr;
@@ -2379,8 +2383,12 @@ sectransp_connect_step2(struct connectdata *conn, int sockindex)
   OSStatus err;
   SSLCipherSuite cipher;
   SSLProtocol protocol = 0;
-  const char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
+#ifndef CURL_DISABLE_PROXY
+  char * const hostname = SSL_IS_PROXY() ? conn->http_proxy.host.name :
     conn->host.name;
+#else
+  char * const hostname = conn->host.name;
+#endif
 
   DEBUGASSERT(ssl_connect_2 == connssl->connecting_state
               || ssl_connect_2_reading == connssl->connecting_state
