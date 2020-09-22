@@ -118,10 +118,6 @@ int main(void)
   struct hostent *hp;
 #endif
 
-#ifndef gethostbyaddr_r
-  (void)gethostbyaddr_r;
-#endif
-
 #if   defined(HAVE_GETHOSTBYADDR_R_5) || \
       defined(HAVE_GETHOSTBYADDR_R_5_REENTRANT)
   rc = gethostbyaddr_r(address, length, type, &h, &hdata);
