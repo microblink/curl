@@ -190,6 +190,8 @@ option(CURL_DISABLE_GOPHER "to disable Gopher" OFF)
 mark_as_advanced(CURL_DISABLE_GOPHER)
 option(CURL_DISABLE_MQTT "to disable MQTT" OFF)
 mark_as_advanced(CURL_DISABLE_MQTT)
+option(CURL_DISABLE_IDN2 "disable IDN2" OFF)
+mark_as_advanced(CURL_DISABLE_IDN2)
 
 if(HTTP_ONLY)
   set(CURL_DISABLE_DICT ON)
@@ -206,6 +208,7 @@ if(HTTP_ONLY)
   set(CURL_DISABLE_SMTP ON)
   set(CURL_DISABLE_TELNET ON)
   set(CURL_DISABLE_TFTP ON)
+  set(CURL_DISABLE_IDN2 ON)
 endif()
 
 option(CURL_DISABLE_ALTSVC "to disable alt-svc support" OFF)
@@ -292,6 +295,8 @@ endif()
 # Check for all needed libraries
 check_library_exists_concat("${CMAKE_DL_LIBS}" dlopen HAVE_LIBDL)
 check_library_exists_concat("socket" connect      HAVE_LIBSOCKET)
+# apple, linux and android have socket but linking fails if given -lsocket linker flag
+list( REMOVE_ITEM CURL_LIBS "socket" )
 check_library_exists("c" gethostbyname "" NOT_NEED_LIBNSL)
 
 # Yellowtab Zeta needs different libraries than BeOS 5.
@@ -383,18 +388,24 @@ if(CMAKE_USE_SECTRANSP)
 endif()
 
 if(CMAKE_USE_OPENSSL)
-  find_package(OpenSSL REQUIRED)
   set(SSL_ENABLED ON)
   set(USE_OPENSSL ON)
 
-  # Depend on OpenSSL via imported targets if supported by the running
-  # version of CMake.  This allows our dependents to get our dependencies
-  # transitively.
-  if(NOT CMAKE_VERSION VERSION_LESS 3.4)
-    list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+  if(TARGET CONAN_PKG::openssl)
+    list(APPEND CURL_LIBS CONAN_PKG::openssl)
+    set(OPENSSL_INCLUDE_DIR ${CONAN_INCLUDE_DIRS_OPENSSL})
   else()
-    list(APPEND CURL_LIBS ${OPENSSL_LIBRARIES})
-    include_directories(${OPENSSL_INCLUDE_DIR})
+    find_package(OpenSSL REQUIRED)
+
+    # Depend on OpenSSL via imported targets if supported by the running
+    # version of CMake.  This allows our dependents to get our dependencies
+    # transitively.
+    if(NOT CMAKE_VERSION VERSION_LESS 3.4)
+      list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+    else()
+      list(APPEND CURL_LIBS ${OPENSSL_LIBRARIES})
+      include_directories(${OPENSSL_INCLUDE_DIR})
+    endif()
   endif()
 
   set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
@@ -411,11 +422,15 @@ if(CMAKE_USE_OPENSSL)
 endif()
 
 if(CMAKE_USE_MBEDTLS)
-  find_package(MbedTLS REQUIRED)
   set(SSL_ENABLED ON)
   set(USE_MBEDTLS ON)
-  list(APPEND CURL_LIBS ${MBEDTLS_LIBRARIES})
-  include_directories(${MBEDTLS_INCLUDE_DIRS})
+  if(TARGET CONAN_PKG::mbedtls)
+    list(APPEND CURL_LIBS CONAN_PKG::mbedtls)
+  else()
+    find_package(MbedTLS REQUIRED)
+    list(APPEND CURL_LIBS ${MBEDTLS_LIBRARIES})
+    include_directories(${MBEDTLS_INCLUDE_DIRS})
+  endif()
 endif()
 
 if(CMAKE_USE_BEARSSL)
@@ -618,7 +633,9 @@ if(NOT CURL_DISABLE_LDAPS)
 endif()
 
 # Check for idn
-check_library_exists_concat("idn2" idn2_lookup_ul HAVE_LIBIDN2)
+if(NOT CURL_DISABLE_IDN2)
+  check_library_exists_concat("idn2" idn2_lookup_ul HAVE_LIBIDN2)
+endif()
 
 # Check for symbol dlopen (same as HAVE_LIBDL)
 check_library_exists("${CURL_LIBS}" dlopen "" HAVE_DLOPEN)
@@ -1323,10 +1340,10 @@ if(BUILD_CURL_EXE)
   add_subdirectory(src)
 endif()
 
-cmake_dependent_option(BUILD_TESTING "Build tests"
-  ON "PERL_FOUND;NOT CURL_DISABLE_TESTS"
-  OFF)
-if(BUILD_TESTING)
+option(CURL_BUILD_TESTING "Build tests" "${PERL_FOUND}")
+if(NOT PERL_FOUND)
+  message(STATUS "Perl not found, testing disabled.")
+elseif(CURL_BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
