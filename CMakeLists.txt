@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2020, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -342,6 +342,7 @@ if(WIN32 OR CMAKE_USE_SECTRANSP OR CMAKE_USE_SCHANNEL OR CMAKE_USE_MBEDTLS OR CM
   set(openssl_default OFF)
 endif()
 option(CMAKE_USE_OPENSSL "Use OpenSSL code. Experimental" ${openssl_default})
+option(CURL_DISABLE_OPENSSL_AUTO_LOAD_CONFIG "Disable automatic loading of OpenSSL configuration" OFF)
 
 count_true(enabled_ssl_options_count
   CMAKE_USE_SCHANNEL
@@ -1418,6 +1419,7 @@ _add_if("LDAPS"         NOT CURL_DISABLE_LDAPS AND
 _add_if("DICT"          NOT CURL_DISABLE_DICT)
 _add_if("TFTP"          NOT CURL_DISABLE_TFTP)
 _add_if("GOPHER"        NOT CURL_DISABLE_GOPHER)
+_add_if("GOPHERS"       NOT CURL_DISABLE_GOPHER AND SSL_ENABLED)
 _add_if("POP3"          NOT CURL_DISABLE_POP3)
 _add_if("POP3S"         NOT CURL_DISABLE_POP3 AND SSL_ENABLED)
 _add_if("IMAP"          NOT CURL_DISABLE_IMAP)
